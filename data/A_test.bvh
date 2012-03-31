@@ -22,7 +22,7 @@ ROOT Hips
      JOINT Neck
      {
       OFFSET 0.000000 13.535332 0.000000
-      CHANNELS 3 Yrotation Xrotation Zrotation
+      CHANNELS 3 Yrotation Xrotation Zrotation#
       JOINT Head
       {
        OFFSET 0.000000 8.819083 -0.027129

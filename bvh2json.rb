@@ -30,8 +30,8 @@ class BVH
     # generate json
     # { name : Hips,
     #   offset : [0.0, 0,0, 0,0],
-    #   channels : { count : { Xposition, Yposition, Zposition, Yrotation, Xrotation, Zrotatin }
-    #   joint : { name : Chest .. }
+    #   channels : [ xpos, ypos, zpos, yrot, xrot, zrot ],
+    #   child : { name : Chest, .. }
     # }
 
     def readJoint(obj)
@@ -40,7 +40,7 @@ class BVH
             line = @lines.shift.strip
             case line
             when /^offset/i
-                offsets = line.split(/\s+/)[1..-1]
+                offsets = line.split(/\s+/)[1..-1].map { |f| f.to_f }
                 obj[:offset] = offsets
             when /^channels/i
                 channels = line.split(/\s+/)[1..-1]
@@ -51,10 +51,10 @@ class BVH
                 # initialize joint
                 name = line.split(/\s+/)[1]
 #                 puts "name : #{name}"
-                child ||= Hash.new
+                child = Hash.new
                 child[:name] = name
                 child[:index] = @index
-            when /\{/
+            when /^\{/
                 if child.nil? then
                     puts "error : child is nil"
                     exit 1
@@ -62,8 +62,8 @@ class BVH
                 @depth += 1
                 obj[:child] ||= Array.new
                 obj[:child].push( readJoint(child) )
-                return obj[:child] if @depth == 0
-            when /\}/
+                return obj[:child][0]if @depth == 0
+            when /^\}/
                 @depth -= 1
                 return obj
             else
@@ -89,7 +89,7 @@ class BVH
         motion = Array.new
         @frames.times do |i|
             line = @lines.shift.strip
-            nums = line.split(/\s+/)
+            nums = line.split(/\s+/).map { |n| n.to_f }
             if nums.size != @index then
                 puts "error motion data count is not #{@index} (but #{nums.size})"
             end
@@ -111,18 +111,35 @@ class BVH
 end
 
 
+def dbgParse(obj, lvl = 0)
+    puts " " * lvl + obj[:name]
+    obj[:child].each { |c| dbgParse(c, lvl+1) } if obj[:child]
+end
 
 #------------------------------------------------------------
 #   main
 #------------------------------------------------------------
 
-if ARGV.size > 0 then
-    bvhFile = ARGV.shift
-else
+case ARGV.size
+when 0
     bvhFile = "data/A_test.bvh"
+    objName = "A_test_bvh"
+when 1
+    bvhFile = ARGV.shift
+    objName = File.basename(bvhFile, ".bvh") + "_bvh"
+when 2
+    bvhFile = ARGV.shift
+    objName = ARGV.shift
 end
+
+outName = objName + ".json"
 
 bvh = BVH.new(bvhFile)
 bvh.parse
 
-print JSON[bvh.object, :max_nesting => 100]
+open(outName, "w") do |f|
+    f.write("#{objName}=" + JSON[bvh.object, :max_nesting => 100] +";")
+end
+
+
+# dbgParse(bvh.object[:root])

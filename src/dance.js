@@ -54,22 +54,22 @@ function BVHSkeleton(bvhObj) {
 }
 
 function BVHParse(obj) {
-    var material, particle, geometry, vec;
-
-    var o = obj.offset;
-    vec = new THREE.Vector3( o[0], o[1], o[2] );
+    var material, particle, geometry;
     
 //     material = new THREE.ParticleBasicMaterial( { size: .1, map: sprite, vertexColors: true } );
 //     material.color.setHSV( 1.0, 0.2, 0.8 );
 //     particle = new THREE.Particle( material );
     
-    particle = new THREE.Particle( new THREE.ParticleCanvasMaterial( { color: Math.random() * 0x808080 + 0x8F8F8F, program: programFill} ) );
+    particle = new THREE.Particle( new THREE.ParticleCanvasMaterial( { color: Math.random() * 0x808080 + 0x8F8F8F, program: programFill, size:50 } ) );
     
     particle.name = obj.name;
     particle.index = obj.index;
     particle.channels = obj.channels;
-    particle.position = vec;
-    particle.offset = vec.clone(); //particle.position.clone();
+    var o = obj.offset;
+    particle.position.x = o[0];
+    particle.position.y = o[1];
+    particle.position.z = o[2];
+    particle.offset = particle.position.clone();
     particle.eulerOrder = 'YXZ';
     for (var i in obj.child) {
         particle.add(BVHParse(obj.child[i]));

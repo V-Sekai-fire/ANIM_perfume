@@ -17,7 +17,26 @@ var windowHalfY = window.innerHeight / 2;
 var toRad = Math.PI / 180;
 var sprite;
 var startTime;
-var frameNo, motionFrame;
+var frameNo = 9999;
+var motionFrame;
+var music;
+
+// particle stroke
+var PI2 = Math.PI * 2;
+var programStroke = function ( context ) {
+    context.lineWidth = 0.05;
+    context.beginPath();
+    context.arc( 0, 0, 1, 0, PI2, true );
+    context.closePath();
+    context.stroke();
+}
+
+var programFill = function ( context ) {
+    context.beginPath();
+    context.arc( 0, 0, 1, 0, PI2, true );
+    context.closePath();
+    context.fill();
+}
 
 //
 init();
@@ -31,29 +50,26 @@ function BVHSkeleton(bvhObj) {
     this.frames =  bvhObj.frames;
     this.frameTime =  bvhObj.frameTime;
     this.motion = bvhObj.motion;
-    this.geometry = BVHParse(bvhObj.root);
+    this.object = BVHParse(bvhObj.root);
 }
 
 function BVHParse(obj) {
-    var material, particle, offset;
-//     material = new THREE.ParticleBasicMaterial( { size: 85, map: sprite, vertexColors: true } );
+    var material, particle, geometry, vec;
+
+    var o = obj.offset;
+    vec = new THREE.Vector3( o[0], o[1], o[2] );
+    
+//     material = new THREE.ParticleBasicMaterial( { size: .1, map: sprite, vertexColors: true } );
 //     material.color.setHSV( 1.0, 0.2, 0.8 );
 //     particle = new THREE.Particle( material );
-
-    var materials = [];
-    for ( var i = 0; i < 6; i ++ ) {
-        materials.push( new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff } ) );
-    }
-    particle = new THREE.Mesh( new THREE.CubeGeometry( 5, 5, 5, 1, 1, 1, materials ), new THREE.MeshFaceMaterial() );
+    
+    particle = new THREE.Particle( new THREE.ParticleCanvasMaterial( { color: Math.random() * 0x808080 + 0x8F8F8F, program: programFill} ) );
     
     particle.name = obj.name;
     particle.index = obj.index;
     particle.channels = obj.channels;
-    offset = obj.offset;
-    particle.position.x = offset[0];
-    particle.position.y = offset[1];
-    particle.position.z = offset[2];
-    particle.offset = particle.position.clone();
+    particle.position = vec;
+    particle.offset = vec.clone(); //particle.position.clone();
     particle.eulerOrder = 'YXZ';
     for (var i in obj.child) {
         particle.add(BVHParse(obj.child[i]));
@@ -98,15 +114,24 @@ function BVHAnimParse(obj) {
 
 
 function BVHAnimation(skel) {
+    var oldFrameNo = frameNo;
     frameNo = Math.round((Date.now() - startTime) / skel.frameTime / 1000) % skel.frames;
+    if (oldFrameNo > frameNo) {
+        music.play();
+    }
     motionFrame = skel.motion[frameNo];
-    BVHAnimParse(skel.geometry);
+    BVHAnimParse(skel.object);
 }
 
 function init() {
     container = document.createElement( 'div' );
     document.body.appendChild( container );
     sprite = THREE.ImageUtils.loadTexture( "resource/ball.png" );
+    if (Audio != undefined) {
+        music = new Audio("resource/Perfume_globalsite_sound.wav");
+        music.volume = 0.05;
+        music.load();
+    }
 
     var info = document.createElement( 'div' );
     info.style.position = 'absolute';
@@ -125,11 +150,11 @@ function init() {
 
     // skeleton
     aachan = new BVHSkeleton(aachan_bvh);
-    scene.add( aachan.geometry );
+    scene.add( aachan.object );
     nocchi = new BVHSkeleton(nocchi_bvh);
-    scene.add( nocchi.geometry );
+    scene.add( nocchi.object );
     kashiyuka = new BVHSkeleton(kashiyuka_bvh);
-    scene.add( kashiyuka.geometry );
+    scene.add( kashiyuka.object );
     
     renderer = new THREE.CanvasRenderer();
     renderer.setSize( window.innerWidth, window.innerHeight );

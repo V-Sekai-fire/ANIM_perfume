@@ -1,7 +1,7 @@
+if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
 var container, stats;
-
 var camera, scene, renderer;
-
 var cube, skeleton;
 
 var targetRotation = 0;
@@ -20,23 +20,56 @@ var startTime;
 var frameNo = 9999;
 var motionFrame;
 var music;
+var trailMax = 5;
+var trailIndex = 0;
+var trails;
+var trailPointParticles = [];
+
 
 // particle stroke
 var PI2 = Math.PI * 2;
-var programStroke = function ( context ) {
-    context.lineWidth = 0.05;
-    context.beginPath();
-    context.arc( 0, 0, 1, 0, PI2, true );
-    context.closePath();
-    context.stroke();
+
+function generateSprite() {
+    var canvas = document.createElement( 'canvas' );
+    canvas.width = 20;
+    canvas.height = 20;
+
+    var context = canvas.getContext( '2d' );
+    var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
+    gradient.addColorStop( 0, 'rgba(255,255,255,1)' );
+    gradient.addColorStop( 0.3, 'rgba(0,255,255,1)' );
+    gradient.addColorStop( 0.5, 'rgba(0,0,64,1)' );
+    gradient.addColorStop( 1, 'rgba(0,0,0,1)' );
+
+    context.fillStyle = gradient;
+    context.fillRect( 0, 0, canvas.width, canvas.height );
+
+    return canvas;
 }
 
-var programFill = function ( context ) {
-    context.beginPath();
-    context.arc( 0, 0, 1, 0, PI2, true );
-    context.closePath();
-    context.fill();
+function generateTrailSprite() {
+    var canvas = document.createElement( 'canvas' );
+    canvas.width = 10;
+    canvas.height = 10;
+
+    var context = canvas.getContext( '2d' );
+    var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
+    gradient.addColorStop( 0, 'rgba(0,128,256,1)' );
+    gradient.addColorStop( 1, 'rgba(0,0,0,1)' );
+
+    context.fillStyle = gradient;
+    context.fillRect( 0, 0, canvas.width, canvas.height );
+
+    return canvas;
 }
+
+var boneMat = new THREE.ParticleBasicMaterial( {
+            map: new THREE.Texture( generateSprite() ),
+            blending: THREE.AdditiveBlending,
+            depthTest: false,
+            transparent: true
+} );
+
 
 //
 init();
@@ -50,18 +83,21 @@ function BVHSkeleton(bvhObj) {
     this.frames =  bvhObj.frames;
     this.frameTime =  bvhObj.frameTime;
     this.motion = bvhObj.motion;
+    this.mat = new THREE.ParticleBasicMaterial( {
+                map: new THREE.Texture( generateSprite() ),
+                blending: THREE.AdditiveBlending,
+                depthTest: false,
+                transparent: true
+    } );
     this.object = BVHParse(bvhObj.root);
 }
+
 
 function BVHParse(obj) {
     var material, particle, geometry;
     
-//     material = new THREE.ParticleBasicMaterial( { size: .1, map: sprite, vertexColors: true } );
-//     material.color.setHSV( 1.0, 0.2, 0.8 );
-//     particle = new THREE.Particle( material );
-    
-    particle = new THREE.Particle( new THREE.ParticleCanvasMaterial( { color: Math.random() * 0x808080 + 0x8F8F8F, program: programFill, size:50 } ) );
-    
+    particle = new THREE.Particle( this.mat );
+
     particle.name = obj.name;
     particle.index = obj.index;
     particle.channels = obj.channels;
@@ -74,6 +110,7 @@ function BVHParse(obj) {
     for (var i in obj.child) {
         particle.add(BVHParse(obj.child[i]));
     }
+    trailPointParticles.push( particle );
     return particle;
 }
 
@@ -123,6 +160,45 @@ function BVHAnimation(skel) {
     BVHAnimParse(skel.object);
 }
 
+
+function initTrail() {
+    var mat = new THREE.ParticleBasicMaterial(
+        {
+            map: new THREE.Texture( generateTrailSprite() ),
+            size:10,
+            blending: THREE.AdditiveBlending,
+            depthTest: false,
+            transparent: true
+        } );
+    
+    trails = [];
+    for (var i=0; i<trailMax; i++) {
+        trails[i] = [];
+    }
+    for (var i=0, len=trailPointParticles.length; i<len; i++) {
+        for (var j=0; j<trailMax; j++ ) {
+            var pa = new THREE.Particle( mat );
+            pa.visible = false;
+            trails[j][i] = pa;
+            scene.add( pa );
+        }
+    }
+}
+
+function trailAnimation() {
+    var ta = trails[trailIndex];
+    for (var i=0, len=trailPointParticles.length; i<len; i++) {
+        var pa = ta[i];
+        pa.position = trailPointParticles[i].matrixWorld.getPosition().clone();
+        pa.visible = true;
+    }
+    trailIndex = (trailIndex + 1) % trailMax;
+}
+
+
+//
+//  main start point
+//
 function init() {
     container = document.createElement( 'div' );
     document.body.appendChild( container );
@@ -155,6 +231,7 @@ function init() {
     scene.add( nocchi.object );
     kashiyuka = new BVHSkeleton(kashiyuka_bvh);
     scene.add( kashiyuka.object );
+    initTrail();
     
     renderer = new THREE.CanvasRenderer();
     renderer.setSize( window.innerWidth, window.innerHeight );
@@ -225,6 +302,7 @@ function animate() {
     BVHAnimation(aachan);
     BVHAnimation(nocchi);
     BVHAnimation(kashiyuka);
+    trailAnimation();
     render();
     stats.update();
 }

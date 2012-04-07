@@ -72,11 +72,6 @@ var boneMat = new THREE.ParticleBasicMaterial( {
 } );
 
 
-//
-init();
-animate();
-
-
 
 // BVH skeleton generate class
 function BVHSkeleton(bvhObj) {
@@ -149,17 +144,33 @@ function BVHAnimParse(obj) {
     }
 }
 
-
-function BVHAnimation(skel) {
+function calcFrameNo() {
     var oldFrameNo = frameNo;
-    frameNo = Math.round((Date.now() - startTime) / skel.frameTime / 1000) % skel.frames;
+    var musicFrameNo = Math.round(music.currentTime / aachan.frameTime);
+    frameNo = Math.round((Date.now() - startTime) / aachan.frameTime / 1000) % aachan.frames;
+
+    // fix sound and motion mismatch.
+    if (musicFrameNo < 2400 && Math.abs(frameNo - musicFrameNo) > 1) {
+        startTime = Date.now() - Math.round(music.currentTime * 1000);
+        frameNo = musicFrameNo;
+    }
+
+    
     frameNo = (frameNo == 0) ? 1 : frameNo;
     if (oldFrameNo > frameNo) {
         music.play();
     }
+}
+
+function skeltonAnimation() {
     // if (frameNo > 2375) { }
-    motionFrame = skel.motion[frameNo];
-    BVHAnimParse(skel.object);
+    calcFrameNo();
+    var dancers = [ aachan, nocchi, kashiyuka ];
+    for (var i=0; i<dancers.length; i++) {
+        var skel = dancers[i];
+        motionFrame = skel.motion[frameNo];
+        BVHAnimParse(skel.object);
+    }
 }
 
 function initTrail() {
@@ -180,6 +191,7 @@ function initTrail() {
         for (var j=0; j<trailMax; j++ ) {
             var pa = new THREE.Particle( mat );
             pa.visible = false;
+            pa.position.z = 100000;
             trails[j][i] = pa;
             scene.add( pa );
         }
@@ -219,14 +231,6 @@ function init() {
     } else {
         musicStarted = true;
     }
-
-    var info = document.createElement( 'div' );
-    info.style.position = 'absolute';
-    info.style.top = '10px';
-    info.style.width = '100%';
-    info.style.textAlign = 'center';
-    info.innerHTML = 'Perfume Global Project';
-    container.appendChild( info );
 
     scene = new THREE.Scene();
 
@@ -317,12 +321,12 @@ function animate() {
         musicStarted = true;
         startTime = Date.now();
     }
-    BVHAnimation(aachan);
-    BVHAnimation(nocchi);
-    BVHAnimation(kashiyuka);
+    skeltonAnimation();
     trailAnimation();
     render();
     stats.update();
+    document.getElementById("counter").innerHTML = frameNo.toString() + ", " +
+        Math.round(music.currentTime / aachan.frameTime).toString();
 }
 
 function render() {
@@ -334,3 +338,11 @@ function render() {
     
     renderer.render( scene, camera );
 }
+
+
+//
+//  main script start
+//
+init();
+animate();
+

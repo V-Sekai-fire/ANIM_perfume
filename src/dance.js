@@ -24,6 +24,7 @@ var trailMax = 5;
 var trailIndex = 0;
 var trails;
 var trailPointParticles = [];
+var musicStarted = false;
 
 
 // particle stroke
@@ -153,13 +154,23 @@ function BVHAnimParse(obj) {
 function BVHAnimation(skel) {
     var oldFrameNo = frameNo;
     frameNo = Math.round((Date.now() - startTime) / skel.frameTime / 1000) % skel.frames;
+    frameNo = (frameNo == 0) ? 1 : frameNo;
     if (oldFrameNo > frameNo) {
         music.play();
     }
+    // if (frameNo > 2375) { }
     motionFrame = skel.motion[frameNo];
     BVHAnimParse(skel.object);
 }
 
+function initBVHanime() {
+    var a = [ aachan, nocchi, kashiyuka ];
+    for (var i in a) {
+        var skel = a[i];
+        motionFrame = skel.motion[1];
+        BVHAnimParse(skel.object);
+    }
+}
 
 function initTrail() {
     var mat = new THREE.ParticleBasicMaterial(
@@ -206,7 +217,17 @@ function init() {
     if (Audio != undefined) {
         music = new Audio("resource/Perfume_globalsite_sound.wav");
         music.volume = 0.05;
+        if (music.oncanplaythrough == undefined) {
+//             musicStarted = true;
+        } else {
+            music.oncanplaythrough = function() {
+                musicStarted = true;
+                startTime = Date.now();
+            };
+        }
         music.load();
+    } else {
+        musicStarted = true;
     }
 
     var info = document.createElement( 'div' );
@@ -231,6 +252,7 @@ function init() {
     scene.add( nocchi.object );
     kashiyuka = new BVHSkeleton(kashiyuka_bvh);
     scene.add( kashiyuka.object );
+    initBVHanime();
     initTrail();
     
     renderer = new THREE.CanvasRenderer();
@@ -299,6 +321,13 @@ function onDocumentTouchMove( event ) {
 
 function animate() {
     requestAnimationFrame( animate );
+    if (! musicStarted ) {
+        if (music.readystate < 4) {
+            return;
+        }
+        musicStarted = true;
+        return;
+    }
     BVHAnimation(aachan);
     BVHAnimation(nocchi);
     BVHAnimation(kashiyuka);

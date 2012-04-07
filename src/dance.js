@@ -24,6 +24,7 @@ var trailMax = 5;
 var trailIndex = 0;
 var trails;
 var trailPointParticles = [];
+var trailStartIndices = [];
 var musicStarted = false;
 
 
@@ -37,9 +38,14 @@ function generateSprite() {
 
     var context = canvas.getContext( '2d' );
     var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
+    var col = new THREE.Color();
+    var h = Math.random();
+    var col1 = col.setHSV( h, 1.0, 1.0 ).getContextStyle();
+    var col2 = col.setHSV( h, 1.0, 0.25 ).getContextStyle();
+    
     gradient.addColorStop( 0, 'rgba(255,255,255,1)' );
-    gradient.addColorStop( 0.3, 'rgba(0,255,255,1)' );
-    gradient.addColorStop( 0.5, 'rgba(0,0,64,1)' );
+    gradient.addColorStop( 0.3, col1 );
+    gradient.addColorStop( 0.5, col2 );
     gradient.addColorStop( 1, 'rgba(0,0,0,1)' );
 
     context.fillStyle = gradient;
@@ -55,7 +61,10 @@ function generateTrailSprite() {
 
     var context = canvas.getContext( '2d' );
     var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
-    gradient.addColorStop( 0, 'rgba(0,128,256,1)' );
+    var col = new THREE.Color();
+    var h = Math.random();
+    var col1 = col.setHSV( h, 1.0, 0.6 ).getContextStyle();
+    gradient.addColorStop( 0, col1 );
     gradient.addColorStop( 1, 'rgba(0,0,0,1)' );
 
     context.fillStyle = gradient;
@@ -64,17 +73,11 @@ function generateTrailSprite() {
     return canvas;
 }
 
-var boneMat = new THREE.ParticleBasicMaterial( {
-            map: new THREE.Texture( generateSprite() ),
-            blending: THREE.AdditiveBlending,
-            depthTest: false,
-            transparent: true
-} );
-
 
 
 // BVH skeleton generate class
 function BVHSkeleton(bvhObj) {
+    trailStartIndices.push( trailPointParticles.length );
     this.frames =  bvhObj.frames;
     this.frameTime =  bvhObj.frameTime;
     this.motion = bvhObj.motion;
@@ -173,7 +176,7 @@ function skeltonAnimation() {
     }
 }
 
-function initTrail() {
+function newTrailMaterial() {
     var mat = new THREE.ParticleBasicMaterial(
         {
             map: new THREE.Texture( generateTrailSprite() ),
@@ -182,12 +185,22 @@ function initTrail() {
             depthTest: false,
             transparent: true
         } );
-    
+    return mat;
+}
+
+function initTrail() {
+    var mat;
     trails = [];
     for (var i=0; i<trailMax; i++) {
         trails[i] = [];
     }
+    var dancer=0;
+    var next = trailStartIndices[dancer];
     for (var i=0, len=trailPointParticles.length; i<len; i++) {
+        if (i >= next) {
+            mat = newTrailMaterial();
+            next = trailStartIndices[++dancer];
+        }
         for (var j=0; j<trailMax; j++ ) {
             var pa = new THREE.Particle( mat );
             pa.visible = false;

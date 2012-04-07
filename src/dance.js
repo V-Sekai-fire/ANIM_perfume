@@ -74,7 +74,6 @@ var boneMat = new THREE.ParticleBasicMaterial( {
 
 //
 init();
-startTime = Date.now();
 animate();
 
 
@@ -163,15 +162,6 @@ function BVHAnimation(skel) {
     BVHAnimParse(skel.object);
 }
 
-function initBVHanime() {
-    var a = [ aachan, nocchi, kashiyuka ];
-    for (var i in a) {
-        var skel = a[i];
-        motionFrame = skel.motion[1];
-        BVHAnimParse(skel.object);
-    }
-}
-
 function initTrail() {
     var mat = new THREE.ParticleBasicMaterial(
         {
@@ -252,7 +242,6 @@ function init() {
     scene.add( nocchi.object );
     kashiyuka = new BVHSkeleton(kashiyuka_bvh);
     scene.add( kashiyuka.object );
-    initBVHanime();
     initTrail();
     
     renderer = new THREE.CanvasRenderer();
@@ -326,7 +315,7 @@ function animate() {
             return;
         }
         musicStarted = true;
-        return;
+        startTime = Date.now();
     }
     BVHAnimation(aachan);
     BVHAnimation(nocchi);

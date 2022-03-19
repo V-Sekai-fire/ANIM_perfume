@@ -9,6 +9,6 @@
 1. Select armature
 1. Export as glb with all influences and limited to selected
 1. Use `perfume_vrm_mappings.json` to construct mappings.
-1. Fill in copyright.
+1. Fill in meta information like copyright.
 1. Apply `core/make_skeleton_mesh.py` script to generate mesh.
 1. Export as vrm.

@@ -31,5 +31,5 @@ Blender 3.2 is unstable with VRM. Try Blender 3.0 if necessary.
 * copy the animation from the dance animation glb scene
 * select the third person animation
 * paste the anim track with the sharable 
-* restore the retargeted animation (menu item) allows gltf export of the entire scene with the dance 
+* OPTIONAL - restore the retargeted animation (menu item) allows gltf export of the entire scene with the dance 
 * play animation

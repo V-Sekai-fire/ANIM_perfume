@@ -12,3 +12,7 @@
 1. Fill in meta information like copyright.
 1. Apply `core/make_skeleton_mesh.py` script to generate mesh.
 1. Export as vrm.
+
+## Notes
+
+Blender 3.2 is unstable with VRM. Try Blender 3.0 if necessary.
